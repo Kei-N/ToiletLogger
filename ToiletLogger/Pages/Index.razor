@@ -1,7 +1,79 @@
 ﻿@page "/"
 
-<h1>Hello, world!</h1>
+@using ToiletLogger.Data
+@inject SQLiteDatabase SQLiteDatabase
 
-Welcome to your new app.
+<h1>トイレ記録</h1>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+<div>
+    <button @onclick="UrineButtonClick">小</button>
+    <button @onclick="StoolButtonClick">大</button>
+</div>
+
+@if (toiletlogs == null)
+{
+    <p><em>No data.</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>日時</th>
+                <th>種別</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var toiletLog in toiletlogs)
+            {
+                <tr>
+                    <td>@toiletLog.Date</td>
+                    @if (toiletLog.ToiletType == ToiletType.Urine)
+                    {
+                        <td>小便</td>
+                    }
+                    else
+                    {
+                        <td>大便</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    Guid userId = Guid.Empty; // TODO: ユーザーIDを発行できるようにする
+    List<ToiletLog> toiletlogs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+    }
+
+    private async Task UrineButtonClick()
+    {
+        var toiletLog = new ToiletLog
+        {
+            Id = Guid.NewGuid(),
+            ToiletType = ToiletType.Urine,
+            Date = DateTime.Now,
+            UserId = userId,
+        };
+        await SQLiteDatabase.SaveItemAsync(toiletLog);
+        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+    }
+
+    private async Task StoolButtonClick()
+    {
+        var toiletLog = new ToiletLog
+        {
+            Id = Guid.NewGuid(),
+            ToiletType = ToiletType.Stool,
+            Date = DateTime.Now,
+            UserId = userId,
+        };
+        await SQLiteDatabase.SaveItemAsync(toiletLog);
+        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+    }
+}

@@ -23,7 +23,8 @@ public static class MauiProgram
 #endif
 
 		builder.Services.AddSingleton<WeatherForecastService>();
+        builder.Services.AddSingleton<SQLiteDatabase>();
 
-		return builder.Build();
+        return builder.Build();
 	}
 }
