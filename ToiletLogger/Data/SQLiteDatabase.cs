@@ -43,4 +43,9 @@ public class SQLiteDatabase
         await Init();
         await Database.DeleteAsync(item);
     }
+
+    public async Task DeleteAllItemAsync<T>()
+    {
+        await Database.DeleteAllAsync<T>();
+    }
 }

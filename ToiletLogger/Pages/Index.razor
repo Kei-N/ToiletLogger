@@ -40,6 +40,9 @@ else
             }
         </tbody>
     </table>
+    <div>
+        <button @onclick="DeleteButtonClick">削除</button>
+    </div>
 }
 
 @code {
@@ -61,7 +64,7 @@ else
             UserId = userId,
         };
         await SQLiteDatabase.SaveItemAsync(toiletLog);
-        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+        await this.OnInitializedAsync();
     }
 
     private async Task StoolButtonClick()
@@ -74,6 +77,12 @@ else
             UserId = userId,
         };
         await SQLiteDatabase.SaveItemAsync(toiletLog);
-        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+        await this.OnInitializedAsync();
+    }
+
+    private async Task DeleteButtonClick()
+    {
+        await SQLiteDatabase.DeleteAllItemAsync<ToiletLog>();
+        await this.OnInitializedAsync();
     }
 }
