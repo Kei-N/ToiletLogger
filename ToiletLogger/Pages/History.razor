@@ -1,0 +1,73 @@
+﻿@page "/history"
+
+@using ToiletLogger.Data
+@inject SQLiteDatabase SQLiteDatabase
+
+<h1>過去の全ログ</h1>
+
+<div align="right">
+    <p></p>
+    <button @onclick="DeleteAllButtonClick">全削除</button>
+    <p></p>
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>小</th>
+            <th>大</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in history)
+        {
+            <tr>
+                <td>@log.Key.ToShortDateString()/@log.Key.ToString("ddd")</td>
+                <td>@log.Value.Item1</td>
+                <td>@log.Value.Item2</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    Guid userId = Guid.Empty; // TODO: ユーザーIDを発行できるようにする
+    List<ToiletLog> toiletlogs = new List<ToiletLog>();
+    Dictionary<DateTime, (int, int)> history = new Dictionary<DateTime, (int, int)>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
+        this.CreateHistory();
+    }
+
+    private void CreateHistory()
+    {
+        history.Clear();
+        foreach (var toiletlog in toiletlogs)
+        {
+            if (!history.Select(x => x.Key).Contains(toiletlog.Date.Date))
+            {
+                history.Add(toiletlog.Date.Date,
+                    (Convert.ToInt32(toiletlog.ToiletType == ToiletType.Urine),
+                    Convert.ToInt32(toiletlog.ToiletType == ToiletType.Stool)));
+            }
+            else
+            {
+                var value = history[toiletlog.Date.Date];
+                history[toiletlog.Date.Date] =
+                    (value.Item1 + Convert.ToInt32(toiletlog.ToiletType == ToiletType.Urine),
+                    value.Item2 + Convert.ToInt32(toiletlog.ToiletType == ToiletType.Stool));
+            }
+        }
+        Console.WriteLine(history);
+        Console.WriteLine();
+    }
+
+    private async Task DeleteAllButtonClick()
+    {
+        await SQLiteDatabase.DeleteAllItemAsync<ToiletLog>();
+        await this.OnInitializedAsync();
+    }
+}

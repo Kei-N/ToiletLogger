@@ -29,7 +29,7 @@ public class SQLiteDatabase
     public async Task<List<ToiletLog>> GetToiletLogsAsync(Guid userId)
     {
         await Init();
-        return await Database.Table<ToiletLog>().Where(i => i.UserId == userId)?.ToListAsync();
+        return await Database.Table<ToiletLog>().Where(i => i.UserId == userId)?.OrderByDescending(x => x.Date).ToListAsync();
     }
 
     public async Task SaveItemAsync<T>(T item)
