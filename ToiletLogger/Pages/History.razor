@@ -1,43 +1,89 @@
 ﻿@page "/history"
 
 @using ToiletLogger.Data
+@using static Common
 @inject SQLiteDatabase SQLiteDatabase
 
-<h1>過去の全ログ</h1>
 
-<div align="right">
-    <p></p>
-    <button @onclick="DeleteAllButtonClick">全削除</button>
-    <p></p>
-</div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th></th>
-            <th>小</th>
-            <th>大</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var log in history)
-        {
-            <tr>
-                <td>@log.Key.ToShortDateString()/@log.Key.ToString("ddd")</td>
-                <td>@log.Value.Item1</td>
-                <td>@log.Value.Item2</td>
-            </tr>
-        }
-    </tbody>
-</table>
+@switch (historyMenuState)
+{
+    case HistoryMenuState.Top:
+        <h1>過去の全ログ</h1>
+
+        <div align="right">
+            <button @onclick="DeleteAllButtonClick">全削除</button>
+            <p></p>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>小</th>
+                    <th>大</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in history)
+                {
+                    <tr>
+                        <td>@log.Key.ToShortDateString()/@log.Key.ToString("ddd")</td>
+                        <td>@log.Value.Item1</td>
+                        <td>@log.Value.Item2</td>
+                        <td><button @onclick="(e=>DetailButtonClick(log.Key))">詳細</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        break;
+    case HistoryMenuState.Detail:
+        <h1>@targetDateToiletlogs.First().Date.ToShortDateString()/@targetDateToiletlogs.First().Date.ToString("ddd")のログ</h1>
+        
+        <div align="right">
+            <button @onclick="BackButtonClick">戻る</button>
+            <p></p>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>種別</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var logs in targetDateToiletlogs)
+                {
+                    <tr>
+                        <td>@logs.Date</td>
+                        @if (logs.ToiletType == ToiletType.Urine)
+                        {
+                            <td>小</td>
+                        }
+                        else
+                        {
+                            <td>大</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+        break;
+}
+
 
 @code {
     Guid userId = Guid.Empty; // TODO: ユーザーIDを発行できるようにする
+    HistoryMenuState historyMenuState = HistoryMenuState.Top;
     List<ToiletLog> toiletlogs = new List<ToiletLog>();
+    List<ToiletLog> targetDateToiletlogs = new List<ToiletLog>();
     Dictionary<DateTime, (int, int)> history = new Dictionary<DateTime, (int, int)>();
 
     protected override async Task OnInitializedAsync()
     {
+        historyMenuState = HistoryMenuState.Top;
         toiletlogs = await SQLiteDatabase.GetToiletLogsAsync(userId);
         this.CreateHistory();
     }
@@ -68,6 +114,17 @@
     private async Task DeleteAllButtonClick()
     {
         await SQLiteDatabase.DeleteAllItemAsync<ToiletLog>();
+        await this.OnInitializedAsync();
+    }
+
+    private void DetailButtonClick(DateTime targetDate)
+    {
+        historyMenuState = HistoryMenuState.Detail;
+        targetDateToiletlogs = toiletlogs.Where(x => x.Date.Date == targetDate).ToList();
+    }
+
+    private async Task BackButtonClick()
+    {
         await this.OnInitializedAsync();
     }
 }
